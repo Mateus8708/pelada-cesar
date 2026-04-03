@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { PeladaProvider, PeladaContext } from './src/context/PeladaContext';
 import CadastroScreen from './src/screens/CadastroScreen';
 import SorteioScreen from './src/screens/SorteioScreen';

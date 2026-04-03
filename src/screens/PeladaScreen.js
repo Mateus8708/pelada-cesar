@@ -1,13 +1,12 @@
-import React, { useContext } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    SafeAreaView, StyleSheet, StatusBar,
+    SafeAreaView, StyleSheet, StatusBar, Animated,
 } from 'react-native';
 import { PeladaContext } from '../context/PeladaContext';
 import { COR, NOMES_TIMES, CORES_TIMES } from '../constants/theme';
 import { calcularPontos } from '../utils/helpers';
 
-// Ícones de emoji para as stats de time
 const STAT_ICONS = { vitorias: '🏆', empates: '🤝', shootouts: '🎯' };
 
 function StatBox({ label, icon, value, onAdd, onRemove, accentColor }) {
@@ -31,7 +30,6 @@ function StatBox({ label, icon, value, onAdd, onRemove, accentColor }) {
 function PlayerRow({ jogador, onAddGol, onRemoveGol, onAddAssist, onRemoveAssist, accentColor }) {
     return (
         <View style={styles.playerRow}>
-            {/* Linha 1: avatar + nome */}
             <View style={styles.playerTopRow}>
                 <View style={[styles.playerAvatar, { backgroundColor: accentColor + '25' }]}>
                     <Text style={[styles.playerAvatarText, { color: accentColor }]}>
@@ -40,8 +38,6 @@ function PlayerRow({ jogador, onAddGol, onRemoveGol, onAddAssist, onRemoveAssist
                 </View>
                 <Text style={styles.playerName}>{jogador.nome}</Text>
             </View>
-
-            {/* Linha 2: gols e assistências */}
             <View style={styles.playerBottomRow}>
                 {/* Gols */}
                 <View style={styles.playerStatPill}>
@@ -54,8 +50,7 @@ function PlayerRow({ jogador, onAddGol, onRemoveGol, onAddAssist, onRemoveAssist
                         <Text style={styles.miniBtnPlusText}>+</Text>
                     </TouchableOpacity>
                 </View>
-
-                {/* Assist */}
+                {/* Assistências */}
                 <View style={styles.playerStatPill}>
                     <Text style={styles.playerStatEmoji}>👟</Text>
                     <Text style={styles.playerStatVal}>{jogador.assistencias}</Text>
@@ -82,22 +77,52 @@ export default function PeladaScreen() {
         encerrarPelada,
     } = useContext(PeladaContext);
 
+    const livePulse = useRef(new Animated.Value(0.5)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(livePulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+                Animated.timing(livePulse, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
+
     return (
         <SafeAreaView style={styles.safe}>
             <StatusBar barStyle="light-content" backgroundColor="#111820" />
-            <ScrollView
-                contentContainerStyle={styles.scroll}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
                 {/* ─── Cabeçalho ─── */}
                 <View style={styles.header}>
-                    <Text style={styles.headerBadge}>AO VIVO</Text>
+                    <Animated.View style={[styles.liveBadgeWrap, { opacity: livePulse }]}>
+                        <Text style={styles.headerBadge}>⬤  AO VIVO</Text>
+                    </Animated.View>
                     <Text style={styles.headerTitle}>🏟  Pelada em Andamento</Text>
                     <Text style={styles.headerSub}>Toque nos botões para registrar os eventos</Text>
                 </View>
 
+                {/* ─── Mini Scoreboard ─── */}
+                <View style={styles.scoreStrip}>
+                    {times.map((_, ti) => {
+                        const p = placar[ti];
+                        const pts = calcularPontos(p.vitorias, p.empates, p.shootouts);
+                        const cor = CORES_TIMES[ti];
+                        return (
+                            <View key={ti} style={[styles.scoreChip, { borderColor: cor + '50' }]}>
+                                <View style={[styles.scoreChipDot, { backgroundColor: cor }]} />
+                                <Text style={[styles.scoreChipName, { color: cor }]}>
+                                    {NOMES_TIMES[ti].replace('Time ', 'T')}
+                                </Text>
+                                <Text style={[styles.scoreChipPts, { color: cor }]}>{pts}</Text>
+                                <Text style={styles.scoreChipPtsLabel}>pts</Text>
+                            </View>
+                        );
+                    })}
+                </View>
+
                 {/* ─── Cards de Time ─── */}
-                {times.map((time, ti) => {
+                {times.map((_, ti) => {
                     const p = placar[ti];
                     const pts = calcularPontos(p.vitorias, p.empates, p.shootouts);
                     const cor = CORES_TIMES[ti];
@@ -105,7 +130,7 @@ export default function PeladaScreen() {
 
                     return (
                         <View key={ti} style={styles.card}>
-                            {/* Topo colorido do card */}
+                            {/* Topo colorido */}
                             <View style={[styles.cardTop, { backgroundColor: cor }]}>
                                 <View>
                                     <Text style={styles.cardTeamName}>{NOMES_TIMES[ti]}</Text>
@@ -171,31 +196,22 @@ export default function PeladaScreen() {
 
 /* ─────────────── STYLES ─────────────── */
 const styles = StyleSheet.create({
-    safe: {
-        flex: 1,
-        backgroundColor: '#111820',
-    },
-    scroll: {
-        padding: 16,
-        paddingBottom: 48,
-    },
+    safe: { flex: 1, backgroundColor: '#111820' },
+    scroll: { padding: 16, paddingBottom: 48 },
 
     /* Header */
-    header: {
-        alignItems: 'center',
-        paddingVertical: 24,
-    },
+    header: { alignItems: 'center', paddingVertical: 20 },
+    liveBadgeWrap: { marginBottom: 10 },
     headerBadge: {
         fontSize: 11,
         fontWeight: '800',
         letterSpacing: 3,
         color: COR.vermelho,
         backgroundColor: '#2a1010',
-        paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingHorizontal: 14,
+        paddingVertical: 5,
         borderRadius: 20,
         overflow: 'hidden',
-        marginBottom: 12,
     },
     headerTitle: {
         fontSize: 24,
@@ -206,10 +222,32 @@ const styles = StyleSheet.create({
     },
     headerSub: {
         fontSize: 13,
-        color: '#667',
+        color: '#8899aa',
         marginTop: 6,
         textAlign: 'center',
     },
+
+    /* Mini Scoreboard */
+    scoreStrip: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 16,
+    },
+    scoreChip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1c2230',
+        borderRadius: 12,
+        borderWidth: 1,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        gap: 5,
+    },
+    scoreChipDot: { width: 7, height: 7, borderRadius: 4 },
+    scoreChipName: { flex: 1, fontSize: 11, fontWeight: '800' },
+    scoreChipPts: { fontSize: 18, fontWeight: '900' },
+    scoreChipPtsLabel: { fontSize: 9, fontWeight: '700', color: '#8899aa', marginBottom: -2 },
 
     /* Card */
     card: {
@@ -237,11 +275,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 1.5,
     },
-    cardTopSub: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.65)',
-        marginTop: 2,
-    },
+    cardTopSub: { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
     cardPtsBadge: {
         backgroundColor: 'rgba(0,0,0,0.25)',
         borderRadius: 14,
@@ -249,18 +283,11 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         alignItems: 'center',
     },
-    cardPtsNum: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#fff',
-        lineHeight: 30,
-    },
+    cardPtsNum: { fontSize: 28, fontWeight: '900', color: '#fff', lineHeight: 30 },
     cardPtsLabel: {
-        fontSize: 11,
-        fontWeight: '700',
+        fontSize: 11, fontWeight: '700',
         color: 'rgba(255,255,255,0.6)',
-        letterSpacing: 1,
-        textTransform: 'uppercase',
+        letterSpacing: 1, textTransform: 'uppercase',
     },
 
     /* Stats Grid */
@@ -270,180 +297,68 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 8,
     },
-    statsGridDivider: {
-        width: 1,
-        backgroundColor: '#2a3040',
-        marginVertical: 4,
-    },
+    statsGridDivider: { width: 1, backgroundColor: '#2a3040', marginVertical: 4 },
     statBox: {
-        flex: 1,
-        alignItems: 'center',
-        borderTopWidth: 2,
-        marginHorizontal: 6,
-        paddingTop: 10,
-        borderRadius: 2,
+        flex: 1, alignItems: 'center',
+        borderTopWidth: 2, marginHorizontal: 6,
+        paddingTop: 10, borderRadius: 2,
     },
-    statBoxIcon: {
-        fontSize: 18,
-        marginBottom: 4,
-    },
+    statBoxIcon: { fontSize: 18, marginBottom: 4 },
     statBoxLabel: {
-        fontSize: 9,
-        fontWeight: '700',
-        color: '#556',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 6,
+        fontSize: 9, fontWeight: '700', color: '#8899aa',
+        textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
     },
-    statBoxValue: {
-        fontSize: 28,
-        fontWeight: '900',
-        marginBottom: 10,
-    },
-    statBoxBtns: {
-        flexDirection: 'row',
-        gap: 6,
-    },
+    statBoxValue: { fontSize: 28, fontWeight: '900', marginBottom: 10 },
+    statBoxBtns: { flexDirection: 'row', gap: 6 },
     statBtnMinus: {
-        width: 34,
-        height: 34,
-        borderRadius: 8,
-        backgroundColor: '#222a38',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#333d50',
+        width: 34, height: 34, borderRadius: 8,
+        backgroundColor: '#222a38', alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: '#333d50',
     },
-    statBtnMinusText: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: COR.vermelho,
-        marginTop: -2,
-    },
-    statBtnPlus: {
-        width: 34,
-        height: 34,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statBtnPlusText: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: '#fff',
-        marginTop: -2,
-    },
+    statBtnMinusText: { fontSize: 22, fontWeight: '700', color: COR.vermelho },
+    statBtnPlus: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    statBtnPlusText: { fontSize: 22, fontWeight: '700', color: '#fff' },
 
     /* Players */
-    playersSection: {
-        padding: 16,
-    },
+    playersSection: { padding: 16 },
     playersSectionTitle: {
-        fontSize: 11,
-        fontWeight: '800',
-        color: '#445',
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        marginBottom: 12,
+        fontSize: 11, fontWeight: '800', color: '#8899aa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12,
     },
     playerRow: {
         backgroundColor: '#1a2235',
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 8,
+        borderRadius: 12, padding: 12, marginBottom: 8,
     },
-    playerTopRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    playerBottomRow: {
-        flexDirection: 'row',
-        gap: 10,
-    },
+    playerTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+    playerBottomRow: { flexDirection: 'row', gap: 10 },
     playerStatPill: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#111820',
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 6,
-        gap: 6,
+        flex: 1, flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#111820', borderRadius: 8,
+        paddingHorizontal: 8, paddingVertical: 6, gap: 6,
     },
     playerAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
+        width: 36, height: 36, borderRadius: 18,
+        alignItems: 'center', justifyContent: 'center', marginRight: 10,
     },
-    playerAvatarText: {
-        fontSize: 16,
-        fontWeight: '800',
-    },
-    playerName: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#eef',
-    },
-    playerStatEmoji: {
-        fontSize: 14,
-    },
-    playerStatVal: {
-        fontSize: 15,
-        fontWeight: '800',
-        color: '#fff',
-        minWidth: 20,
-        textAlign: 'center',
-    },
+    playerAvatarText: { fontSize: 16, fontWeight: '800' },
+    playerName: { flex: 1, fontSize: 16, fontWeight: '700', color: '#eef' },
+    playerStatEmoji: { fontSize: 14 },
+    playerStatVal: { fontSize: 15, fontWeight: '800', color: '#fff', minWidth: 20, textAlign: 'center' },
     miniBtnMinus: {
-        width: 26,
-        height: 26,
-        borderRadius: 6,
-        backgroundColor: '#2a1818',
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: 26, height: 26, borderRadius: 6,
+        backgroundColor: '#2a1818', alignItems: 'center', justifyContent: 'center',
     },
-    miniBtnMinusText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: COR.vermelho,
-        marginTop: -2,
-    },
-    miniBtnPlus: {
-        width: 26,
-        height: 26,
-        borderRadius: 6,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    miniBtnPlusText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#fff',
-        marginTop: -2,
-    },
+    miniBtnMinusText: { fontSize: 16, fontWeight: '700', color: COR.vermelho },
+    miniBtnPlus: { width: 26, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+    miniBtnPlusText: { fontSize: 16, fontWeight: '700', color: '#fff' },
 
     /* Encerrar */
     btnEncerrar: {
         backgroundColor: COR.vermelho,
-        borderRadius: 16,
-        paddingVertical: 18,
-        alignItems: 'center',
-        marginTop: 8,
+        borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 8,
         shadowColor: COR.vermelho,
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.45,
-        shadowRadius: 12,
-        elevation: 8,
+        shadowOpacity: 0.45, shadowRadius: 12, elevation: 8,
     },
-    btnEncerrarText: {
-        color: '#fff',
-        fontSize: 17,
-        fontWeight: '900',
-        letterSpacing: 0.5,
-    },
+    btnEncerrarText: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 0.5 },
 });
