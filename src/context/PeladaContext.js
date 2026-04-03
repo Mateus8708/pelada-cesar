@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import { createContext, useState } from 'react';
 import { Alert } from 'react-native';
 import { sortearTimes, calcularPontos } from '../utils/helpers';
 import { NOMES_TIMES } from '../constants/theme';
@@ -212,8 +212,39 @@ export function PeladaProvider({ children }) {
         });
     }
 
-    function novaPelada() {
-        setJogadores(Array.from({ length: 15 }, (_, i) => ({ nome: '', nota: 0, id: i })));
+    function rebalancearTimes() {
+        const validos = jogadores.filter(j => j.nome.trim().length > 0);
+        if (validos.length < 15) return;
+
+        const grupos = {};
+        validos.forEach(j => {
+            if (!grupos[j.nota]) grupos[j.nota] = [];
+            grupos[j.nota].push(j);
+        });
+        Object.values(grupos).forEach(grupo => {
+            for (let i = grupo.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [grupo[i], grupo[j]] = [grupo[j], grupo[i]];
+            }
+        });
+        const embaralhados = Object.keys(grupos)
+            .sort((a, b) => Number(b) - Number(a))
+            .flatMap(nota => grupos[nota]);
+
+        const novosTimesArr = [[], [], []];
+        const ordem = [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2];
+        embaralhados.forEach((j, i) => {
+            const t = ordem[i];
+            novosTimesArr[t].push({ ...j, time: t, gols: 0, assistencias: 0 });
+        });
+        setTimes(novosTimesArr);
+        setJogadorSelecionado(null);
+    }
+
+    function resetarJogo(manterJogadores = false) {
+        if (!manterJogadores) {
+            setJogadores(Array.from({ length: 15 }, (_, i) => ({ nome: '', nota: 0, id: i })));
+        }
         setTimes([[], [], []]);
         setPlacar([
             { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
@@ -221,9 +252,28 @@ export function PeladaProvider({ children }) {
             { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
         ]);
         setJogadoresAtivos([]);
+        setPenaltiTimes([]);
         setPenaltiResultado(null);
         setJogadorSelecionado(null);
         setTela('cadastro');
+    }
+
+    function novaPelada() {
+        Alert.alert(
+            '🔄 Nova Pelada',
+            'Deseja manter os mesmos jogadores?',
+            [
+                {
+                    text: 'Nova turma',
+                    style: 'destructive',
+                    onPress: () => resetarJogo(false),
+                },
+                {
+                    text: 'Mesmos jogadores',
+                    onPress: () => resetarJogo(true),
+                },
+            ]
+        );
     }
 
     return (
@@ -255,6 +305,7 @@ export function PeladaProvider({ children }) {
                 getArtilheiro,
                 getGarcao,
                 getRankingCompleto,
+                rebalancearTimes,
                 novaPelada,
             }}
         >
