@@ -1,0 +1,264 @@
+import React, { createContext, useState } from 'react';
+import { Alert } from 'react-native';
+import { sortearTimes, calcularPontos } from '../utils/helpers';
+import { NOMES_TIMES } from '../constants/theme';
+
+export const PeladaContext = createContext({});
+
+export function PeladaProvider({ children }) {
+    const [tela, setTela] = useState('cadastro');
+    const [jogadores, setJogadores] = useState(
+        Array.from({ length: 15 }, (_, i) => ({ nome: '', nota: 0, id: i }))
+    );
+    const [times, setTimes] = useState([[], [], []]);
+    const [placar, setPlacar] = useState([
+        { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+        { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+        { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+    ]);
+    const [jogadoresAtivos, setJogadoresAtivos] = useState([]);
+    const [penaltiTimes, setPenaltiTimes] = useState([]);
+    const [penaltiResultado, setPenaltiResultado] = useState(null);
+    const [jogadorSelecionado, setJogadorSelecionado] = useState(null);
+
+    function atualizarNome(id, nome) {
+        setJogadores(prev => prev.map(j => j.id === id ? { ...j, nome } : j));
+    }
+
+    function atualizarNota(id, nota) {
+        setJogadores(prev => prev.map(j => j.id === id ? { ...j, nota } : j));
+    }
+
+    function formarTimes() {
+        const validos = jogadores.filter(j => j.nome.trim().length > 0);
+        if (validos.length < 15) {
+            Alert.alert('Atenção', 'Preencha os 15 jogadores antes de sortear.');
+            return;
+        }
+        setTimes(sortearTimes(validos));
+        setTela('sorteio');
+    }
+
+    function irParaPelada() {
+        setJogadoresAtivos(times.flat());
+        setTela('pelada');
+    }
+
+    function trocarJogadores(jogadorA, jogadorB) {
+        setTimes(prev => {
+            const novo = prev.map(t => [...t]);
+            const tA = jogadorA.time;
+            const tB = jogadorB.time;
+            const iA = novo[tA].findIndex(j => j.nome === jogadorA.nome);
+            const iB = novo[tB].findIndex(j => j.nome === jogadorB.nome);
+            const tempA = { ...novo[tA][iA], time: tB };
+            const tempB = { ...novo[tB][iB], time: tA };
+            novo[tA][iA] = tempB;
+            novo[tB][iB] = tempA;
+            return novo;
+        });
+        setJogadorSelecionado(null);
+    }
+
+    function selecionarJogador(jogador) {
+        if (!jogadorSelecionado) {
+            setJogadorSelecionado(jogador);
+            return;
+        }
+        if (jogadorSelecionado.nome === jogador.nome) {
+            setJogadorSelecionado(null);
+            return;
+        }
+        if (jogadorSelecionado.time === jogador.time) {
+            Alert.alert('Atenção', 'Selecione um jogador de outro time para trocar.');
+            setJogadorSelecionado(null);
+            return;
+        }
+        Alert.alert(
+            'Confirmar troca',
+            `Trocar ${jogadorSelecionado.nome} (${NOMES_TIMES[jogadorSelecionado.time]}) com ${jogador.nome} (${NOMES_TIMES[jogador.time]})?`,
+            [
+                { text: 'Cancelar', onPress: () => setJogadorSelecionado(null) },
+                { text: 'Trocar', onPress: () => trocarJogadores(jogadorSelecionado, jogador) },
+            ]
+        );
+    }
+
+    function adicionarGol(nomeJogador) {
+        setJogadoresAtivos(prev =>
+            prev.map(j => j.nome === nomeJogador ? { ...j, gols: j.gols + 1 } : j)
+        );
+    }
+
+    function removerGol(nomeJogador) {
+        setJogadoresAtivos(prev =>
+            prev.map(j => j.nome === nomeJogador && j.gols > 0 ? { ...j, gols: j.gols - 1 } : j)
+        );
+    }
+
+    function adicionarAssistencia(nomeJogador) {
+        setJogadoresAtivos(prev =>
+            prev.map(j => j.nome === nomeJogador ? { ...j, assistencias: j.assistencias + 1 } : j)
+        );
+    }
+
+    function removerAssistencia(nomeJogador) {
+        setJogadoresAtivos(prev =>
+            prev.map(j => j.nome === nomeJogador && j.assistencias > 0 ? { ...j, assistencias: j.assistencias - 1 } : j)
+        );
+    }
+
+    function adicionarVitoria(ti) {
+        setPlacar(prev => prev.map((p, i) => i === ti ? { ...p, vitorias: p.vitorias + 1 } : p));
+    }
+
+    function removerVitoria(ti) {
+        setPlacar(prev => prev.map((p, i) => i === ti && p.vitorias > 0 ? { ...p, vitorias: p.vitorias - 1 } : p));
+    }
+
+    function adicionarEmpate(ti) {
+        setPlacar(prev => prev.map((p, i) => i === ti ? { ...p, empates: p.empates + 1 } : p));
+    }
+
+    function removerEmpate(ti) {
+        setPlacar(prev => prev.map((p, i) => i === ti && p.empates > 0 ? { ...p, empates: p.empates - 1 } : p));
+    }
+
+    function adicionarShootout(ti) {
+        setPlacar(prev => prev.map((p, i) => i === ti ? { ...p, shootouts: (p.shootouts || 0) + 1 } : p));
+    }
+
+    function removerShootout(ti) {
+        setPlacar(prev => prev.map((p, i) => i === ti && (p.shootouts || 0) > 0 ? { ...p, shootouts: p.shootouts - 1 } : p));
+    }
+
+    function encerrarPelada() {
+        Alert.alert(
+            '📯 Encerrar pelada?',
+            'Deseja realmente encerrar a pelada?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Encerrar',
+                    onPress: () => {
+                        const pontos = placar.map((p, i) => ({
+                            index: i,
+                            pontos: calcularPontos(p.vitorias, p.empates, p.shootouts),
+                        }));
+                        const maxPts = Math.max(...pontos.map(p => p.pontos));
+                        const lideres = pontos.filter(p => p.pontos === maxPts);
+                        if (lideres.length > 1) {
+                            setPenaltiTimes(lideres.map(l => l.index));
+                            setPenaltiResultado(null);
+                            setTela('penalti');
+                        } else {
+                            setTela('podio');
+                        }
+                    },
+                },
+            ]
+        );
+    }
+
+    function resolverPenalti() {
+        const vencedor = penaltiTimes[Math.floor(Math.random() * penaltiTimes.length)];
+        setPenaltiResultado(vencedor);
+    }
+
+    function getPodiumOrdem() {
+        const pontos = placar.map((p, i) => ({
+            index: i,
+            pontos: calcularPontos(p.vitorias, p.empates, p.shootouts),
+            vitorias: p.vitorias,
+            empates: p.empates,
+            derrotas: p.derrotas,
+            shootouts: p.shootouts,
+        }));
+        if (penaltiResultado !== null) {
+            return [...pontos].sort((a, b) => {
+                if (a.index === penaltiResultado) return -1;
+                if (b.index === penaltiResultado) return 1;
+                return b.pontos - a.pontos;
+            });
+        }
+        return [...pontos].sort((a, b) => b.pontos - a.pontos);
+    }
+
+    function getArtilheiro() {
+        const sorted = [...jogadoresAtivos].sort((a, b) =>
+            b.gols !== a.gols ? b.gols - a.gols : b.assistencias - a.assistencias
+        );
+        const top = sorted[0];
+        if (!top) return [];
+        return sorted.filter(j => j.gols === top.gols && j.assistencias === top.assistencias);
+    }
+
+    function getGarcao() {
+        const sorted = [...jogadoresAtivos].sort((a, b) =>
+            b.assistencias !== a.assistencias ? b.assistencias - a.assistencias : b.gols - a.gols
+        );
+        const top = sorted[0];
+        if (!top) return [];
+        return sorted.filter(j => j.assistencias === top.assistencias && j.gols === top.gols);
+    }
+
+    function getRankingCompleto() {
+        return [...jogadoresAtivos].sort((a, b) => {
+            const ptA = a.gols * 2 + a.assistencias;
+            const ptB = b.gols * 2 + b.assistencias;
+            if (ptB !== ptA) return ptB - ptA;
+            if (b.gols !== a.gols) return b.gols - a.gols;
+            return b.assistencias - a.assistencias;
+        });
+    }
+
+    function novaPelada() {
+        setJogadores(Array.from({ length: 15 }, (_, i) => ({ nome: '', nota: 0, id: i })));
+        setTimes([[], [], []]);
+        setPlacar([
+            { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+            { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+            { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+        ]);
+        setJogadoresAtivos([]);
+        setPenaltiResultado(null);
+        setJogadorSelecionado(null);
+        setTela('cadastro');
+    }
+
+    return (
+        <PeladaContext.Provider
+            value={{
+                tela, setTela,
+                jogadores, setJogadores,
+                times, setTimes,
+                placar, setPlacar,
+                jogadoresAtivos, setJogadoresAtivos,
+                penaltiTimes, setPenaltiTimes,
+                penaltiResultado, setPenaltiResultado,
+                jogadorSelecionado, setJogadorSelecionado,
+
+                atualizarNome,
+                atualizarNota,
+                formarTimes,
+                irParaPelada,
+                trocarJogadores,
+                selecionarJogador,
+                adicionarGol, removerGol,
+                adicionarAssistencia, removerAssistencia,
+                adicionarVitoria, removerVitoria,
+                adicionarEmpate, removerEmpate,
+                adicionarShootout, removerShootout,
+                encerrarPelada,
+                resolverPenalti,
+                getPodiumOrdem,
+                getArtilheiro,
+                getGarcao,
+                getRankingCompleto,
+                novaPelada,
+            }}
+        >
+            {children}
+        </PeladaContext.Provider>
+    );
+}
