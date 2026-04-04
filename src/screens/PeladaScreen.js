@@ -1,13 +1,13 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    SafeAreaView, StyleSheet, StatusBar, Animated,
+    SafeAreaView, StyleSheet, StatusBar, Animated, Vibration,
 } from 'react-native';
 import { PeladaContext } from '../context/PeladaContext';
 import { COR, NOMES_TIMES, CORES_TIMES } from '../constants/theme';
 import { calcularPontos } from '../utils/helpers';
 
-const STAT_ICONS = { vitorias: '🏆', empates: '🤝', shootouts: '🎯' };
+const STAT_ICONS = { vitorias: '🏆', empates: '🤝', penaltis: '🎯' };
 
 function StatBox({ label, icon, value, onAdd, onRemove, accentColor }) {
     return (
@@ -79,6 +79,52 @@ export default function PeladaScreen() {
 
     const livePulse = useRef(new Animated.Value(0.5)).current;
 
+    // ── Cronômetro ──
+    const DURACAO = 8 * 60; // 8 minutos em segundos
+    const [segundos, setSegundos] = useState(DURACAO);
+    const [rodando, setRodando] = useState(false);
+    const intervalRef = useRef(null);
+    const timerFlash = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        if (rodando) {
+            intervalRef.current = setInterval(() => {
+                setSegundos(prev => {
+                    if (prev <= 1) {
+                        clearInterval(intervalRef.current);
+                        setRodando(false);
+                        Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+                        Animated.loop(
+                            Animated.sequence([
+                                Animated.timing(timerFlash, { toValue: 0.2, duration: 400, useNativeDriver: true }),
+                                Animated.timing(timerFlash, { toValue: 1, duration: 400, useNativeDriver: true }),
+                            ]),
+                            { iterations: 6 }
+                        ).start();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        } else {
+            clearInterval(intervalRef.current);
+        }
+        return () => clearInterval(intervalRef.current);
+    }, [rodando]);
+
+    function resetarTimer() {
+        clearInterval(intervalRef.current);
+        setRodando(false);
+        setSegundos(DURACAO);
+    }
+
+    const minutos = Math.floor(segundos / 60);
+    const secs = segundos % 60;
+    const display = `${String(minutos).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    const pctRestante = segundos / DURACAO;
+    const timerCor = pctRestante > 0.5 ? COR.verde : pctRestante > 0.25 ? COR.amarelo : COR.vermelho;
+    const acabou = segundos === 0;
+
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
@@ -101,6 +147,50 @@ export default function PeladaScreen() {
                     <Text style={styles.headerTitle}>🏟  Pelada em Andamento</Text>
                     <Text style={styles.headerSub}>Toque nos botões para registrar os eventos</Text>
                 </View>
+
+                {/* ─── Cronômetro ─── */}
+                <Animated.View style={[styles.timerCard, { opacity: timerFlash, borderColor: timerCor + '50' }]}>
+                    {/* Barra de progresso */}
+                    <View style={styles.timerProgressBg}>
+                        <View style={[styles.timerProgressFill, {
+                            width: `${pctRestante * 100}%`,
+                            backgroundColor: timerCor,
+                        }]} />
+                    </View>
+
+                    <View style={styles.timerBody}>
+                        {/* Display */}
+                        <View style={styles.timerDisplayArea}>
+                            {acabou
+                                ? <Text style={[styles.timerAcabou]}>TEMPO!</Text>
+                                : <Text style={[styles.timerDisplay, { color: timerCor }]}>{display}</Text>
+                            }
+                            <Text style={styles.timerLabel}>
+                                {acabou ? 'A partida encerrou' : rodando ? 'em andamento' : segundos === DURACAO ? '8 min por partida' : 'pausado'}
+                            </Text>
+                        </View>
+
+                        {/* Botões */}
+                        <View style={styles.timerBtns}>
+                            <TouchableOpacity
+                                style={[styles.timerBtnPlay, {
+                                    backgroundColor: acabou ? '#1a2235' : timerCor,
+                                    shadowColor: timerCor,
+                                }]}
+                                onPress={() => { if (!acabou) setRodando(r => !r); }}
+                                activeOpacity={0.8}
+                                disabled={acabou}
+                            >
+                                <Text style={styles.timerBtnPlayText}>
+                                    {rodando ? '⏸' : '▶'}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.timerBtnReset} onPress={resetarTimer} activeOpacity={0.8}>
+                                <Text style={styles.timerBtnResetText}>↺</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Animated.View>
 
                 {/* ─── Mini Scoreboard ─── */}
                 <View style={styles.scoreStrip}>
@@ -159,10 +249,10 @@ export default function PeladaScreen() {
                                 />
                                 <View style={styles.statsGridDivider} />
                                 <StatBox
-                                    label="Shoot-out" icon={STAT_ICONS.shootouts}
-                                    value={p.shootouts || 0} accentColor={cor}
-                                    onAdd={() => adicionarShootout(ti)}
-                                    onRemove={() => removerShootout(ti)}
+                                    label="Pênalti" icon={STAT_ICONS.penaltis}
+                                    value={p.penaltis || 0} accentColor={cor}
+                                    onAdd={() => adicionarPenalti(ti)}
+                                    onRemove={() => removerPenalti(ti)}
                                 />
                             </View>
 
@@ -226,6 +316,38 @@ const styles = StyleSheet.create({
         marginTop: 6,
         textAlign: 'center',
     },
+
+    /* Cronômetro */
+    timerCard: {
+        backgroundColor: '#141c28',
+        borderRadius: 18, borderWidth: 1,
+        marginBottom: 16, overflow: 'hidden',
+    },
+    timerProgressBg: { height: 4, backgroundColor: '#1a2235', width: '100%' },
+    timerProgressFill: { height: 4, borderRadius: 0 },
+    timerBody: {
+        flexDirection: 'row', alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingVertical: 14,
+    },
+    timerDisplayArea: { gap: 2 },
+    timerDisplay: { fontSize: 40, fontWeight: '900', letterSpacing: 2, lineHeight: 44 },
+    timerAcabou: { fontSize: 34, fontWeight: '900', color: COR.vermelho, letterSpacing: 3 },
+    timerLabel: { fontSize: 11, color: '#4a6a8a', fontWeight: '600', letterSpacing: 0.5 },
+    timerBtns: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+    timerBtnPlay: {
+        width: 52, height: 52, borderRadius: 26,
+        alignItems: 'center', justifyContent: 'center',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4, shadowRadius: 8, elevation: 5,
+    },
+    timerBtnPlayText: { fontSize: 20 },
+    timerBtnReset: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: '#1a2235', alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: '#2a3448',
+    },
+    timerBtnResetText: { fontSize: 20, color: '#5a7a9a', fontWeight: '700' },
 
     /* Mini Scoreboard */
     scoreStrip: {
