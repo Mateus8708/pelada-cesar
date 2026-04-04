@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { PeladaContext } from '../context/PeladaContext';
 import { COR, NOMES_TIMES, CORES_TIMES } from '../constants/theme';
+import { salvarHistoricoMensal } from '../services/HistoricoService';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
@@ -14,6 +15,17 @@ export default function RankingScreen() {
     const topPts = ranking.length > 0
         ? Math.max(1, ranking[0].gols * 2 + ranking[0].assistencias)
         : 1;
+
+    const handleNovaPelada = () => {
+        // Envia para o Firebase os jogadores que jogaram essa pelada, adicionando seu score de pontos final.
+        const dadosComPontos = ranking.map(j => ({
+            ...j,
+            pontos: (j.gols || 0) * 2 + (j.assistencias || 0)
+        }));
+        salvarHistoricoMensal(dadosComPontos);
+
+        novaPelada();
+    };
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -108,7 +120,7 @@ export default function RankingScreen() {
                     );
                 })}
 
-                <TouchableOpacity style={styles.btnNova} onPress={novaPelada} activeOpacity={0.85}>
+                <TouchableOpacity style={styles.btnNova} onPress={handleNovaPelada} activeOpacity={0.85}>
                     <Text style={styles.btnNovaText}>🔄  Nova Pelada</Text>
                 </TouchableOpacity>
             </ScrollView>

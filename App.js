@@ -7,6 +7,7 @@ import PenaltiScreen from './src/screens/PenaltiScreen';
 import PodioScreen from './src/screens/PodioScreen';
 import DestaquesScreen from './src/screens/DestaquesScreen';
 import RankingScreen from './src/screens/RankingScreen';
+import HistoricoScreen from './src/screens/HistoricoScreen';
 
 function MainRouter() {
   const { tela } = useContext(PeladaContext);
@@ -18,6 +19,7 @@ function MainRouter() {
   if (tela === 'podio') return <PodioScreen />;
   if (tela === 'destaques') return <DestaquesScreen />;
   if (tela === 'ranking') return <RankingScreen />;
+  if (tela === 'historico') return <HistoricoScreen />;
 
   return null;
 }

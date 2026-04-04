@@ -13,7 +13,7 @@ const GRUPOS = [
 ];
 
 export default function CadastroScreen() {
-    const { jogadores, atualizarNome, atualizarNota, formarTimes } = useContext(PeladaContext);
+    const { jogadores, atualizarNome, atualizarNota, formarTimes, setTela } = useContext(PeladaContext);
     const [focusedId, setFocusedId] = useState(null);
     // Estado local para os nomes — evita re-render do Context a cada letra digitada
     const [nomes, setNomes] = useState(() => jogadores.map(j => j.nome));
@@ -189,6 +189,15 @@ export default function CadastroScreen() {
                         )}
                     </TouchableOpacity>
 
+                    {/* Botão Histórico */}
+                    <TouchableOpacity
+                        style={styles.btnHistorico}
+                        onPress={() => { Keyboard.dismiss(); setTela('historico'); }}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.btnHistoricoText}>📚  Ver Histórico Mensal</Text>
+                    </TouchableOpacity>
+
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -303,5 +312,16 @@ const styles = StyleSheet.create({
     },
     btnProgressFill: {
         height: 3, backgroundColor: '#2a4a6a', borderRadius: 2,
+    },
+    btnHistorico: {
+        marginTop: 16,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    btnHistoricoText: {
+        color: '#5a7a9a',
+        fontSize: 14,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
 });
