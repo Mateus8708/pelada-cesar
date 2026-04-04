@@ -26,11 +26,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "owner": "arthur5502",
     "extra": {
       "eas": {
-        "projectId": "fa7eb3f4-2908-4cbb-8fa9-9742a2446d98"
+        "projectId": "63117567-1327-405f-9e3a-c68df88327d7"
       }
-    },
-    "owner": "mateus87s-organization"
+    }
   }
 }
