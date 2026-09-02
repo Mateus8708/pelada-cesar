@@ -15,7 +15,7 @@ export default function SorteioScreen() {
 
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="light-content" backgroundColor="#080e18" />
+            <StatusBar barStyle="dark-content" backgroundColor="#f4f6f9" />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
@@ -142,19 +142,19 @@ export default function SorteioScreen() {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#080e18' },
+    safe: { flex: 1, backgroundColor: COR.fundo },
     scroll: { padding: 16, paddingBottom: 50 },
 
     header: { alignItems: 'center', paddingTop: 16, paddingBottom: 22 },
     headerEmoji: { fontSize: 46, marginBottom: 10 },
-    headerTitle: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-    headerSub: { fontSize: 13, color: '#8899aa', marginTop: 5 },
+    headerTitle: { fontSize: 28, fontWeight: '900', color: COR.texto, letterSpacing: -0.5 },
+    headerSub: { fontSize: 13, color: COR.textoSecundario, marginTop: 5 },
 
     selBanner: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#1a1800',
+        backgroundColor: COR.amareloClaro,
         borderRadius: 14,
         borderWidth: 1,
         borderColor: COR.amarelo + '60',
@@ -164,38 +164,38 @@ const styles = StyleSheet.create({
     selBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
     selBannerIcon: { fontSize: 22 },
     selBannerName: { fontSize: 15, fontWeight: '700', color: COR.amarelo },
-    selBannerHint: { fontSize: 11, color: '#667', marginTop: 2 },
+    selBannerHint: { fontSize: 11, color: COR.textoSecundario, marginTop: 2 },
     selBannerBtn: {
-        backgroundColor: '#2a2200',
+        backgroundColor: COR.branco,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderWidth: 1,
-        borderColor: COR.amarelo + '40',
+        borderColor: COR.amarelo,
     },
     selBannerBtnText: { fontSize: 12, fontWeight: '700', color: COR.amarelo },
 
     hintBanner: {
-        backgroundColor: '#111820',
+        backgroundColor: COR.superficieAlt,
         borderRadius: 12,
         padding: 12,
         marginBottom: 14,
         borderWidth: 1,
-        borderColor: '#1e2a3a',
+        borderColor: COR.borda,
     },
-    hintBannerText: { fontSize: 12, color: '#8899aa', fontWeight: '600', textAlign: 'center' },
+    hintBannerText: { fontSize: 12, color: COR.textoSecundario, fontWeight: '600', textAlign: 'center' },
 
     teamCard: {
-        backgroundColor: '#111820',
+        backgroundColor: COR.superficie,
         borderRadius: 20,
         borderWidth: 1.5,
         marginBottom: 16,
         overflow: 'hidden',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.1,
         shadowRadius: 12,
-        elevation: 6,
+        elevation: 3,
     },
     teamHeader: {
         flexDirection: 'row',
@@ -203,31 +203,31 @@ const styles = StyleSheet.create({
         padding: 16,
         gap: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#1a2235',
+        borderBottomColor: COR.borda,
     },
     teamColorDot: { width: 10, height: 10, borderRadius: 5 },
     teamName: { fontSize: 18, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, flex: 1 },
     teamHeaderRight: { flexDirection: 'row', gap: 10 },
-    forcaBadge: { alignItems: 'center', backgroundColor: '#080e18', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+    forcaBadge: { alignItems: 'center', backgroundColor: COR.superficieAlt, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
     forcaNum: { fontSize: 14, fontWeight: '900' },
-    forcaLbl: { fontSize: 9, color: '#8899aa', fontWeight: '700', letterSpacing: 0.5 },
+    forcaLbl: { fontSize: 9, color: COR.textoSecundario, fontWeight: '700', letterSpacing: 0.5 },
 
     teamBody: { padding: 12, gap: 8 },
     playerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#0e1420',
+        backgroundColor: COR.superficieAlt,
         borderRadius: 12,
         padding: 10,
         gap: 10,
         borderWidth: 1,
-        borderColor: '#1a2438',
+        borderColor: COR.borda,
     },
     avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
     avatarLetter: { fontSize: 15, fontWeight: '800' },
-    playerName: { flex: 1, fontSize: 14, fontWeight: '700', color: '#bcc' },
+    playerName: { flex: 1, fontSize: 14, fontWeight: '700', color: COR.texto },
     stars: { flexDirection: 'row' },
-    star: { fontSize: 13, color: '#1e2a3a', opacity: 0.5 },
+    star: { fontSize: 13, color: COR.bordaForte, opacity: 0.5 },
     checkBadge: {
         width: 22, height: 22, borderRadius: 11,
         backgroundColor: COR.amarelo,
@@ -238,14 +238,14 @@ const styles = StyleSheet.create({
     actions: { flexDirection: 'row', gap: 10, marginTop: 4 },
     btnBack: {
         paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14,
-        alignItems: 'center', backgroundColor: '#111820',
-        borderWidth: 1, borderColor: '#1e2a3a',
+        alignItems: 'center', backgroundColor: COR.superficieAlt,
+        borderWidth: 1, borderColor: COR.borda,
     },
-    btnBackText: { color: '#8899aa', fontSize: 14, fontWeight: '700' },
+    btnBackText: { color: COR.textoSecundario, fontSize: 14, fontWeight: '700' },
     btnRebalancear: {
         paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: '#1a1800',
+        backgroundColor: COR.amareloClaro,
         borderWidth: 1, borderColor: COR.amarelo + '50',
     },
     btnRebalancearText: { fontSize: 18 },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', backgroundColor: COR.verde,
         shadowColor: COR.verde,
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4, shadowRadius: 10, elevation: 6,
+        shadowOpacity: 0.14, shadowRadius: 10, elevation: 4,
     },
     btnStartText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 0.3 },
 });

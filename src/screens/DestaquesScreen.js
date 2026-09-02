@@ -6,15 +6,17 @@ import {
 import { PeladaContext } from '../context/PeladaContext';
 import { COR, NOMES_TIMES, CORES_TIMES } from '../constants/theme';
 
+const MEDALHAS = ['🥇', '🥈', '🥉'];
+
 export default function DestaquesScreen() {
-    const { getArtilheiro, getGarcao, setTela } = useContext(PeladaContext);
-    const artilheiros = getArtilheiro();
-    const garcoes = getGarcao();
-    const semEstatisticas = artilheiros.length === 0 || artilheiros[0]?.gols === 0;
+    const { getTopArtilheiros, getTopGarcons, setTela } = useContext(PeladaContext);
+    const artilheiros = getTopArtilheiros(3);
+    const garcoes = getTopGarcons(3);
+    const semEstatisticas = artilheiros.length === 0 && garcoes.length === 0;
 
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="light-content" backgroundColor="#080e18" />
+            <StatusBar barStyle="dark-content" backgroundColor="#f4f6f9" />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
@@ -35,28 +37,28 @@ export default function DestaquesScreen() {
 
                 {!semEstatisticas && (
                     <>
-                        {/* Artilheiro */}
-                        <AwardSection
+                        {/* Top 3 Artilheiros */}
+                        <Top3Section
                             icon="⚽"
-                            title={artilheiros.length > 1 ? 'Artilheiros' : 'Artilheiro do dia'}
+                            title="Top 3 Artilheiros"
                             color="#f59e0b"
-                            bg="#1a1500"
+                            bg={COR.amareloClaro}
                             players={artilheiros}
                             mainStat={(j) => j.gols}
-                            mainLabel="GOLS"
-                            subStat={(j) => `${j.assistencias} assistência${j.assistencias !== 1 ? 's' : ''}`}
+                            mainLabel="gols"
+                            subStat={(j) => `${j.assistencias} assist.`}
                         />
 
-                        {/* Garçom */}
-                        <AwardSection
+                        {/* Top 3 Assistências */}
+                        <Top3Section
                             icon="👟"
-                            title={garcoes.length > 1 ? 'Garçons' : 'Garçom do dia'}
+                            title="Top 3 Assistências"
                             color={COR.verde}
-                            bg="#071410"
+                            bg={COR.verdeClaro}
                             players={garcoes}
                             mainStat={(j) => j.assistencias}
-                            mainLabel="ASSISTS"
-                            subStat={(j) => `${j.gols} gol${j.gols !== 1 ? 's' : ''}`}
+                            mainLabel="assist."
+                            subStat={(j) => `${j.gols} gols`}
                         />
                     </>
                 )}
@@ -69,10 +71,8 @@ export default function DestaquesScreen() {
     );
 }
 
-function AwardSection({ icon, title, color, bg, players, mainStat, mainLabel, subStat }) {
-    const winner = players[0];
-    if (!winner) return null;
-    const teamCor = CORES_TIMES[winner.time] || color;
+function Top3Section({ icon, title, color, bg, players, mainStat, mainLabel, subStat }) {
+    if (players.length === 0) return null;
 
     return (
         <View style={[styles.awardCard, { borderColor: color + '60', backgroundColor: bg }]}>
@@ -82,58 +82,53 @@ function AwardSection({ icon, title, color, bg, players, mainStat, mainLabel, su
                 <Text style={[styles.awardBadgeText, { color }]}>{title.toUpperCase()}</Text>
             </View>
 
-            {/* Hero winner */}
-            <View style={styles.heroRow}>
-                <View style={[styles.heroAvatar, { backgroundColor: color + '25', borderColor: color + '60', borderWidth: 2 }]}>
-                    <Text style={[styles.heroAvatarLetter, { color }]}>{winner.nome.charAt(0).toUpperCase()}</Text>
-                </View>
-                <View style={styles.heroInfo}>
-                    <Text style={styles.heroName}>{winner.nome}</Text>
-                    <View style={[styles.heroTeamBadge, { borderColor: teamCor + '80' }]}>
-                        <Text style={[styles.heroTeamText, { color: teamCor }]}>{NOMES_TIMES[winner.time]}</Text>
+            {players.map((j, i) => {
+                const teamCor = CORES_TIMES[j.time] || color;
+                return (
+                    <View key={j.nome} style={[styles.rankRow, i < players.length - 1 && styles.rankRowBorder]}>
+                        <Text style={styles.rankMedal}>{MEDALHAS[i]}</Text>
+
+                        <View style={[styles.rankAvatar, { backgroundColor: color + '25', borderColor: color + '60' }]}>
+                            <Text style={[styles.rankAvatarLetter, { color }]}>{j.nome.charAt(0).toUpperCase()}</Text>
+                        </View>
+
+                        <View style={styles.rankInfo}>
+                            <Text style={styles.rankName}>{j.nome}</Text>
+                            <View style={[styles.rankTeamBadge, { borderColor: teamCor + '80' }]}>
+                                <Text style={[styles.rankTeamText, { color: teamCor }]}>{NOMES_TIMES[j.time]}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.rankStat}>
+                            <Text style={[styles.rankStatNum, { color }]}>{mainStat(j)}</Text>
+                            <Text style={styles.rankStatSub}>{subStat(j)}</Text>
+                        </View>
                     </View>
-                </View>
-                <View style={styles.heroBigStat}>
-                    <Text style={[styles.heroBigNum, { color }]}>{mainStat(winner)}</Text>
-                    <Text style={[styles.heroBigLabel, { color: color + '99' }]}>{mainLabel}</Text>
-                </View>
-            </View>
-
-            {/* Sub-info */}
-            <Text style={styles.heroSubStat}>{subStat(winner)}</Text>
-
-            {/* Outros empatados */}
-            {players.length > 1 && (
-                <View style={styles.tiedRow}>
-                    <Text style={styles.tiedLabel}>Também em destaque:</Text>
-                    {players.slice(1).map((j, i) => (
-                        <Text key={i} style={styles.tiedName}>• {j.nome}</Text>
-                    ))}
-                </View>
-            )}
+                );
+            })}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#080e18' },
+    safe: { flex: 1, backgroundColor: COR.fundo },
     scroll: { padding: 20, paddingBottom: 50 },
 
     header: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
     headerEmoji: { fontSize: 48, marginBottom: 10 },
-    headerTitle: { fontSize: 30, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-    headerSub: { fontSize: 14, color: '#8899aa', marginTop: 6 },
+    headerTitle: { fontSize: 30, fontWeight: '900', color: COR.texto, letterSpacing: -0.5 },
+    headerSub: { fontSize: 14, color: COR.textoSecundario, marginTop: 6 },
 
     awardCard: {
         borderRadius: 20,
         borderWidth: 1.5,
-        padding: 20,
+        padding: 18,
         marginBottom: 18,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.5,
+        shadowOpacity: 0.12,
         shadowRadius: 16,
-        elevation: 8,
+        elevation: 4,
     },
     awardBadge: {
         flexDirection: 'row',
@@ -144,52 +139,52 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 5,
         gap: 6,
-        marginBottom: 18,
+        marginBottom: 14,
     },
     awardBadgeIcon: { fontSize: 14 },
     awardBadgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5 },
 
-    heroRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
-    heroAvatar: {
-        width: 56, height: 56, borderRadius: 28,
-        alignItems: 'center', justifyContent: 'center',
+    rankRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
     },
-    heroAvatarLetter: { fontSize: 24, fontWeight: '900' },
-    heroInfo: { flex: 1, gap: 6 },
-    heroName: { fontSize: 20, fontWeight: '800', color: '#eef' },
-    heroTeamBadge: {
+    rankRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: COR.borda,
+    },
+    rankMedal: { fontSize: 22, width: 28, textAlign: 'center' },
+    rankAvatar: {
+        width: 40, height: 40, borderRadius: 20,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1.5,
+    },
+    rankAvatarLetter: { fontSize: 16, fontWeight: '900' },
+    rankInfo: { flex: 1, gap: 6 },
+    rankName: { fontSize: 15, fontWeight: '800', color: COR.texto },
+    rankTeamBadge: {
         alignSelf: 'flex-start',
         borderWidth: 1, borderRadius: 6,
         paddingHorizontal: 8, paddingVertical: 2,
     },
-    heroTeamText: { fontSize: 11, fontWeight: '700' },
-    heroBigStat: { alignItems: 'center', minWidth: 60 },
-    heroBigNum: { fontSize: 48, fontWeight: '900', lineHeight: 52 },
-    heroBigLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginTop: 2 },
-
-    heroSubStat: { fontSize: 13, color: '#8899aa', marginTop: 4, marginBottom: 4 },
-
-    tiedRow: {
-        marginTop: 12,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#1e2a3a',
-    },
-    tiedLabel: { fontSize: 11, color: '#8899aa', fontWeight: '700', marginBottom: 4 },
-    tiedName: { fontSize: 13, color: '#8899aa', marginTop: 2 },
+    rankTeamText: { fontSize: 10, fontWeight: '700' },
+    rankStat: { alignItems: 'flex-end', minWidth: 56 },
+    rankStatNum: { fontSize: 24, fontWeight: '900', lineHeight: 26 },
+    rankStatSub: { fontSize: 11, color: COR.textoSecundario, marginTop: 2 },
 
     emptyState: {
         alignItems: 'center',
-        backgroundColor: '#111820',
+        backgroundColor: COR.superficie,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#1e2a3a',
+        borderColor: COR.borda,
         padding: 32,
         marginBottom: 18,
     },
     emptyEmoji: { fontSize: 48, marginBottom: 14 },
-    emptyTitle: { fontSize: 18, fontWeight: '800', color: '#c0d0e0', marginBottom: 8 },
-    emptySub: { fontSize: 13, color: '#8899aa', textAlign: 'center', lineHeight: 20 },
+    emptyTitle: { fontSize: 18, fontWeight: '800', color: COR.texto, marginBottom: 8 },
+    emptySub: { fontSize: 13, color: COR.textoSecundario, textAlign: 'center', lineHeight: 20 },
 
     btnNext: {
         backgroundColor: COR.azul,
@@ -197,7 +192,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         shadowColor: COR.azul,
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
+        shadowOpacity: 0.16, shadowRadius: 12, elevation: 4,
     },
     btnNextText: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 0.3 },
 });

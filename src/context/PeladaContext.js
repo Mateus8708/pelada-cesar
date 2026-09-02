@@ -1,25 +1,39 @@
-import { createContext, useState } from 'react';
-import { Alert } from 'react-native';
+import { createContext, useEffect, useRef, useState } from 'react';
 import { sortearTimes, calcularPontos } from '../utils/helpers';
 import { NOMES_TIMES } from '../constants/theme';
+import { avisar, confirmar, perguntarNovaPelada } from '../utils/dialogo';
+import { carregarEstado, salvarEstado } from '../utils/storage';
 
 export const PeladaContext = createContext({});
 
+const PLACAR_INICIAL = [
+    { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+    { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+    { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
+];
+
 export function PeladaProvider({ children }) {
-    const [tela, setTela] = useState('cadastro');
+    // Lê o estado salvo uma única vez, na primeira renderização
+    const salvoRef = useRef();
+    if (salvoRef.current === undefined) {
+        salvoRef.current = carregarEstado() ?? {};
+    }
+    const salvo = salvoRef.current;
+
+    const [tela, setTela] = useState(salvo.tela ?? 'cadastro');
     const [jogadores, setJogadores] = useState(
         Array.from({ length: 15 }, (_, i) => ({ nome: '', nota: 0, id: i }))
     );
-    const [times, setTimes] = useState([[], [], []]);
-    const [placar, setPlacar] = useState([
-        { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
-        { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
-        { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
-    ]);
-    const [jogadoresAtivos, setJogadoresAtivos] = useState([]);
-    const [penaltiTimes, setPenaltiTimes] = useState([]);
-    const [penaltiResultado, setPenaltiResultado] = useState(null);
+    const [times, setTimes] = useState(salvo.times ?? [[], [], []]);
+    const [placar, setPlacar] = useState(salvo.placar ?? PLACAR_INICIAL);
+    const [jogadoresAtivos, setJogadoresAtivos] = useState(salvo.jogadoresAtivos ?? []);
+    const [penaltiTimes, setPenaltiTimes] = useState(salvo.penaltiTimes ?? []);
+    const [penaltiResultado, setPenaltiResultado] = useState(salvo.penaltiResultado ?? null);
     const [jogadorSelecionado, setJogadorSelecionado] = useState(null);
+
+    useEffect(() => {
+        salvarEstado({ tela, times, placar, jogadoresAtivos, penaltiTimes, penaltiResultado });
+    }, [tela, times, placar, jogadoresAtivos, penaltiTimes, penaltiResultado]);
 
     function atualizarNome(id, nome) {
         setJogadores(prev => prev.map(j => j.id === id ? { ...j, nome } : j));
@@ -32,11 +46,44 @@ export function PeladaProvider({ children }) {
     function formarTimes() {
         const validos = jogadores.filter(j => j.nome.trim().length > 0);
         if (validos.length < 15) {
-            Alert.alert('Atenção', 'Preencha os 15 jogadores antes de sortear.');
+            avisar('Atenção', 'Preencha os 15 jogadores antes de sortear.');
             return;
         }
         setTimes(sortearTimes(validos));
         setTela('sorteio');
+    }
+
+    function adicionarJogador(timeIndex, nome) {
+        const nomeLimpo = nome.trim();
+        if (!nomeLimpo) return false;
+
+        const jaExiste = times.some(time =>
+            time.some(j => j.nome.toLowerCase() === nomeLimpo.toLowerCase())
+        );
+        if (jaExiste) {
+            avisar('Nome repetido', `"${nomeLimpo}" já está cadastrado em outro time.`);
+            return false;
+        }
+
+        setTimes(prev => {
+            const novo = prev.map(t => [...t]);
+            novo[timeIndex] = [...novo[timeIndex], { nome: nomeLimpo, time: timeIndex, gols: 0, assistencias: 0 }];
+            return novo;
+        });
+        return true;
+    }
+
+    function removerJogador(timeIndex, nome) {
+        setTimes(prev => {
+            const novo = prev.map(t => [...t]);
+            novo[timeIndex] = novo[timeIndex].filter(j => j.nome !== nome);
+            return novo;
+        });
+    }
+
+    function iniciarPelada() {
+        setJogadoresAtivos(times.flat());
+        setTela('pelada');
     }
 
     function irParaPelada() {
@@ -70,17 +117,16 @@ export function PeladaProvider({ children }) {
             return;
         }
         if (jogadorSelecionado.time === jogador.time) {
-            Alert.alert('Atenção', 'Selecione um jogador de outro time para trocar.');
+            avisar('Atenção', 'Selecione um jogador de outro time para trocar.');
             setJogadorSelecionado(null);
             return;
         }
-        Alert.alert(
+        confirmar(
             'Confirmar troca',
             `Trocar ${jogadorSelecionado.nome} (${NOMES_TIMES[jogadorSelecionado.time]}) com ${jogador.nome} (${NOMES_TIMES[jogador.time]})?`,
-            [
-                { text: 'Cancelar', onPress: () => setJogadorSelecionado(null) },
-                { text: 'Trocar', onPress: () => trocarJogadores(jogadorSelecionado, jogador) },
-            ]
+            () => trocarJogadores(jogadorSelecionado, jogador),
+            () => setJogadorSelecionado(null),
+            { textoConfirmar: 'Trocar' }
         );
     }
 
@@ -133,30 +179,26 @@ export function PeladaProvider({ children }) {
     }
 
     function encerrarPelada() {
-        Alert.alert(
+        confirmar(
             '📯 Encerrar pelada?',
             'Deseja realmente encerrar a pelada?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Encerrar',
-                    onPress: () => {
-                        const pontos = placar.map((p, i) => ({
-                            index: i,
-                            pontos: calcularPontos(p.vitorias, p.empates, p.shootouts),
-                        }));
-                        const maxPts = Math.max(...pontos.map(p => p.pontos));
-                        const lideres = pontos.filter(p => p.pontos === maxPts);
-                        if (lideres.length > 1) {
-                            setPenaltiTimes(lideres.map(l => l.index));
-                            setPenaltiResultado(null);
-                            setTela('penalti');
-                        } else {
-                            setTela('podio');
-                        }
-                    },
-                },
-            ]
+            () => {
+                const pontos = placar.map((p, i) => ({
+                    index: i,
+                    pontos: calcularPontos(p.vitorias, p.empates, p.shootouts),
+                }));
+                const maxPts = Math.max(...pontos.map(p => p.pontos));
+                const lideres = pontos.filter(p => p.pontos === maxPts);
+                if (lideres.length > 1) {
+                    setPenaltiTimes(lideres.map(l => l.index));
+                    setPenaltiResultado(null);
+                    setTela('penalti');
+                } else {
+                    setTela('podio');
+                }
+            },
+            undefined,
+            { textoConfirmar: 'Encerrar', destrutivo: true }
         );
     }
 
@@ -202,14 +244,24 @@ export function PeladaProvider({ children }) {
         return sorted.filter(j => j.assistencias === top.assistencias && j.gols === top.gols);
     }
 
+    function getTopArtilheiros(n = 3) {
+        return [...jogadoresAtivos]
+            .filter(j => j.gols > 0)
+            .sort((a, b) => b.gols !== a.gols ? b.gols - a.gols : b.assistencias - a.assistencias)
+            .slice(0, n);
+    }
+
+    function getTopGarcons(n = 3) {
+        return [...jogadoresAtivos]
+            .filter(j => j.assistencias > 0)
+            .sort((a, b) => b.assistencias !== a.assistencias ? b.assistencias - a.assistencias : b.gols - a.gols)
+            .slice(0, n);
+    }
+
     function getRankingCompleto() {
-        return [...jogadoresAtivos].sort((a, b) => {
-            const ptA = a.gols * 2 + a.assistencias;
-            const ptB = b.gols * 2 + b.assistencias;
-            if (ptB !== ptA) return ptB - ptA;
-            if (b.gols !== a.gols) return b.gols - a.gols;
-            return b.assistencias - a.assistencias;
-        });
+        return [...jogadoresAtivos].sort((a, b) =>
+            b.gols !== a.gols ? b.gols - a.gols : b.assistencias - a.assistencias
+        );
     }
 
     function rebalancearTimes() {
@@ -244,13 +296,9 @@ export function PeladaProvider({ children }) {
     function resetarJogo(manterJogadores = false) {
         if (!manterJogadores) {
             setJogadores(Array.from({ length: 15 }, (_, i) => ({ nome: '', nota: 0, id: i })));
+            setTimes([[], [], []]);
         }
-        setTimes([[], [], []]);
-        setPlacar([
-            { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
-            { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
-            { vitorias: 0, empates: 0, derrotas: 0, shootouts: 0 },
-        ]);
+        setPlacar(PLACAR_INICIAL);
         setJogadoresAtivos([]);
         setPenaltiTimes([]);
         setPenaltiResultado(null);
@@ -259,20 +307,9 @@ export function PeladaProvider({ children }) {
     }
 
     function novaPelada() {
-        Alert.alert(
-            '🔄 Nova Pelada',
-            'Deseja manter os mesmos jogadores?',
-            [
-                {
-                    text: 'Nova turma',
-                    style: 'destructive',
-                    onPress: () => resetarJogo(false),
-                },
-                {
-                    text: 'Mesmos jogadores',
-                    onPress: () => resetarJogo(true),
-                },
-            ]
+        perguntarNovaPelada(
+            () => resetarJogo(false),
+            () => resetarJogo(true),
         );
     }
 
@@ -291,6 +328,9 @@ export function PeladaProvider({ children }) {
                 atualizarNome,
                 atualizarNota,
                 formarTimes,
+                adicionarJogador,
+                removerJogador,
+                iniciarPelada,
                 irParaPelada,
                 trocarJogadores,
                 selecionarJogador,
@@ -304,6 +344,8 @@ export function PeladaProvider({ children }) {
                 getPodiumOrdem,
                 getArtilheiro,
                 getGarcao,
+                getTopArtilheiros,
+                getTopGarcons,
                 getRankingCompleto,
                 rebalancearTimes,
                 novaPelada,

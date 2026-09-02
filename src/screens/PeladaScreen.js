@@ -136,7 +136,7 @@ export default function PeladaScreen() {
 
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="light-content" backgroundColor="#111820" />
+            <StatusBar barStyle="dark-content" backgroundColor="#f4f6f9" />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* ─── Cabeçalho ─── */}
@@ -174,7 +174,7 @@ export default function PeladaScreen() {
                         <View style={styles.timerBtns}>
                             <TouchableOpacity
                                 style={[styles.timerBtnPlay, {
-                                    backgroundColor: acabou ? '#1a2235' : timerCor,
+                                    backgroundColor: acabou ? COR.superficieAlt : timerCor,
                                     shadowColor: timerCor,
                                 }]}
                                 onPress={() => { if (!acabou) setRodando(r => !r); }}
@@ -250,9 +250,9 @@ export default function PeladaScreen() {
                                 <View style={styles.statsGridDivider} />
                                 <StatBox
                                     label="Pênalti" icon={STAT_ICONS.penaltis}
-                                    value={p.penaltis || 0} accentColor={cor}
-                                    onAdd={() => adicionarPenalti(ti)}
-                                    onRemove={() => removerPenalti(ti)}
+                                    value={p.shootouts || 0} accentColor={cor}
+                                    onAdd={() => adicionarShootout(ti)}
+                                    onRemove={() => removerShootout(ti)}
                                 />
                             </View>
 
@@ -286,7 +286,7 @@ export default function PeladaScreen() {
 
 /* ─────────────── STYLES ─────────────── */
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#111820' },
+    safe: { flex: 1, backgroundColor: COR.fundo },
     scroll: { padding: 16, paddingBottom: 48 },
 
     /* Header */
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: 3,
         color: COR.vermelho,
-        backgroundColor: '#2a1010',
+        backgroundColor: COR.vermelhoClaro,
         paddingHorizontal: 14,
         paddingVertical: 5,
         borderRadius: 20,
@@ -306,24 +306,24 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 24,
         fontWeight: '800',
-        color: '#fff',
+        color: COR.texto,
         letterSpacing: -0.5,
         textAlign: 'center',
     },
     headerSub: {
         fontSize: 13,
-        color: '#8899aa',
+        color: COR.textoSecundario,
         marginTop: 6,
         textAlign: 'center',
     },
 
     /* Cronômetro */
     timerCard: {
-        backgroundColor: '#141c28',
+        backgroundColor: COR.superficie,
         borderRadius: 18, borderWidth: 1,
         marginBottom: 16, overflow: 'hidden',
     },
-    timerProgressBg: { height: 4, backgroundColor: '#1a2235', width: '100%' },
+    timerProgressBg: { height: 4, backgroundColor: COR.superficieAlt, width: '100%' },
     timerProgressFill: { height: 4, borderRadius: 0 },
     timerBody: {
         flexDirection: 'row', alignItems: 'center',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     timerDisplayArea: { gap: 2 },
     timerDisplay: { fontSize: 40, fontWeight: '900', letterSpacing: 2, lineHeight: 44 },
     timerAcabou: { fontSize: 34, fontWeight: '900', color: COR.vermelho, letterSpacing: 3 },
-    timerLabel: { fontSize: 11, color: '#4a6a8a', fontWeight: '600', letterSpacing: 0.5 },
+    timerLabel: { fontSize: 11, color: COR.textoSecundario, fontWeight: '600', letterSpacing: 0.5 },
     timerBtns: { flexDirection: 'row', gap: 10, alignItems: 'center' },
     timerBtnPlay: {
         width: 52, height: 52, borderRadius: 26,
@@ -344,10 +344,10 @@ const styles = StyleSheet.create({
     timerBtnPlayText: { fontSize: 20 },
     timerBtnReset: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: '#1a2235', alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: '#2a3448',
+        backgroundColor: COR.superficieAlt, alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: COR.borda,
     },
-    timerBtnResetText: { fontSize: 20, color: '#5a7a9a', fontWeight: '700' },
+    timerBtnResetText: { fontSize: 20, color: COR.textoSecundario, fontWeight: '700' },
 
     /* Mini Scoreboard */
     scoreStrip: {
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1c2230',
+        backgroundColor: COR.superficie,
         borderRadius: 12,
         borderWidth: 1,
         paddingHorizontal: 10,
@@ -369,19 +369,19 @@ const styles = StyleSheet.create({
     scoreChipDot: { width: 7, height: 7, borderRadius: 4 },
     scoreChipName: { flex: 1, fontSize: 11, fontWeight: '800' },
     scoreChipPts: { fontSize: 18, fontWeight: '900' },
-    scoreChipPtsLabel: { fontSize: 9, fontWeight: '700', color: '#8899aa', marginBottom: -2 },
+    scoreChipPtsLabel: { fontSize: 9, fontWeight: '700', color: COR.textoSecundario, marginBottom: -2 },
 
     /* Card */
     card: {
-        backgroundColor: '#1c2230',
+        backgroundColor: COR.superficie,
         borderRadius: 20,
         marginBottom: 20,
         overflow: 'hidden',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.1,
         shadowRadius: 16,
-        elevation: 8,
+        elevation: 3,
     },
     cardTop: {
         flexDirection: 'row',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     },
     cardTopSub: { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
     cardPtsBadge: {
-        backgroundColor: 'rgba(0,0,0,0.25)',
+        backgroundColor: 'rgba(0,0,0,0.15)',
         borderRadius: 14,
         paddingHorizontal: 16,
         paddingVertical: 8,
@@ -415,11 +415,11 @@ const styles = StyleSheet.create({
     /* Stats Grid */
     statsGrid: {
         flexDirection: 'row',
-        backgroundColor: '#141a24',
+        backgroundColor: COR.superficieAlt,
         paddingVertical: 16,
         paddingHorizontal: 8,
     },
-    statsGridDivider: { width: 1, backgroundColor: '#2a3040', marginVertical: 4 },
+    statsGridDivider: { width: 1, backgroundColor: COR.borda, marginVertical: 4 },
     statBox: {
         flex: 1, alignItems: 'center',
         borderTopWidth: 2, marginHorizontal: 6,
@@ -427,15 +427,15 @@ const styles = StyleSheet.create({
     },
     statBoxIcon: { fontSize: 18, marginBottom: 4 },
     statBoxLabel: {
-        fontSize: 9, fontWeight: '700', color: '#8899aa',
+        fontSize: 9, fontWeight: '700', color: COR.textoSecundario,
         textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
     },
     statBoxValue: { fontSize: 28, fontWeight: '900', marginBottom: 10 },
     statBoxBtns: { flexDirection: 'row', gap: 6 },
     statBtnMinus: {
         width: 34, height: 34, borderRadius: 8,
-        backgroundColor: '#222a38', alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: '#333d50',
+        backgroundColor: COR.vermelhoClaro, alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: COR.borda,
     },
     statBtnMinusText: { fontSize: 22, fontWeight: '700', color: COR.vermelho },
     statBtnPlus: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
@@ -444,18 +444,18 @@ const styles = StyleSheet.create({
     /* Players */
     playersSection: { padding: 16 },
     playersSectionTitle: {
-        fontSize: 11, fontWeight: '800', color: '#8899aa',
+        fontSize: 11, fontWeight: '800', color: COR.textoSecundario,
         textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12,
     },
     playerRow: {
-        backgroundColor: '#1a2235',
+        backgroundColor: COR.superficieAlt,
         borderRadius: 12, padding: 12, marginBottom: 8,
     },
     playerTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
     playerBottomRow: { flexDirection: 'row', gap: 10 },
     playerStatPill: {
         flex: 1, flexDirection: 'row', alignItems: 'center',
-        backgroundColor: '#111820', borderRadius: 8,
+        backgroundColor: COR.superficie, borderRadius: 8,
         paddingHorizontal: 8, paddingVertical: 6, gap: 6,
     },
     playerAvatar: {
@@ -463,12 +463,12 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', marginRight: 10,
     },
     playerAvatarText: { fontSize: 16, fontWeight: '800' },
-    playerName: { flex: 1, fontSize: 16, fontWeight: '700', color: '#eef' },
+    playerName: { flex: 1, fontSize: 16, fontWeight: '700', color: COR.texto },
     playerStatEmoji: { fontSize: 14 },
-    playerStatVal: { fontSize: 15, fontWeight: '800', color: '#fff', minWidth: 20, textAlign: 'center' },
+    playerStatVal: { fontSize: 15, fontWeight: '800', color: COR.texto, minWidth: 20, textAlign: 'center' },
     miniBtnMinus: {
         width: 26, height: 26, borderRadius: 6,
-        backgroundColor: '#2a1818', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: COR.vermelhoClaro, alignItems: 'center', justifyContent: 'center',
     },
     miniBtnMinusText: { fontSize: 16, fontWeight: '700', color: COR.vermelho },
     miniBtnPlus: { width: 26, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
         borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 8,
         shadowColor: COR.vermelho,
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.45, shadowRadius: 12, elevation: 8,
+        shadowOpacity: 0.3, shadowRadius: 12, elevation: 5,
     },
     btnEncerrarText: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 0.5 },
 });

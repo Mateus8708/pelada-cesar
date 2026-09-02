@@ -7,9 +7,9 @@ import { PeladaContext } from '../context/PeladaContext';
 import { NOMES_TIMES, COR } from '../constants/theme';
 
 const MEDAL_META = [
-    { emoji: '🥇', glow: '#f5c842', bg: '#1a1800', label: '1º LUGAR' },
-    { emoji: '🥈', glow: '#9ba8b5', bg: '#14181e', label: '2º LUGAR' },
-    { emoji: '🥉', glow: '#b87333', bg: '#1a1108', label: '3º LUGAR' },
+    { emoji: '🥇', glow: '#f5c842', bg: '#fdf2df', label: '1º LUGAR' },
+    { emoji: '🥈', glow: '#7c8896', bg: '#f1f3f5', label: '2º LUGAR' },
+    { emoji: '🥉', glow: '#a35f27', bg: '#fdf0e6', label: '3º LUGAR' },
 ];
 
 export default function PodioScreen() {
@@ -39,7 +39,7 @@ export default function PodioScreen() {
 
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="light-content" backgroundColor="#080e18" />
+            <StatusBar barStyle="dark-content" backgroundColor="#f4f6f9" />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* Título */}
@@ -133,27 +133,27 @@ function MiniStat({ label, value, color }) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#080e18' },
+    safe: { flex: 1, backgroundColor: COR.fundo },
     scroll: { padding: 20, paddingBottom: 50 },
 
     header: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
     headerEmoji: { fontSize: 52, marginBottom: 10 },
-    headerTitle: { fontSize: 30, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-    headerSub: { fontSize: 14, color: '#8899aa', marginTop: 6 },
+    headerTitle: { fontSize: 30, fontWeight: '900', color: COR.texto, letterSpacing: -0.5 },
+    headerSub: { fontSize: 14, color: COR.textoSecundario, marginTop: 6 },
 
     /* Campeão */
     firstCard: {
-        backgroundColor: '#12180a',
+        backgroundColor: COR.amareloClaro,
         borderRadius: 24,
         borderWidth: 2,
         padding: 24,
         alignItems: 'center',
         marginBottom: 16,
         shadowColor: '#f5c842',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-        elevation: 12,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        elevation: 4,
     },
     championBanner: {
         backgroundColor: '#f5c84222',
@@ -184,15 +184,15 @@ const styles = StyleSheet.create({
     firstStats: { flexDirection: 'row', gap: 10 },
     miniStat: {
         alignItems: 'center',
-        backgroundColor: '#080e18',
+        backgroundColor: COR.superficie,
         borderRadius: 10,
         paddingVertical: 8,
         paddingHorizontal: 14,
         borderWidth: 1,
-        borderColor: '#1e2a3a',
+        borderColor: COR.borda,
     },
     miniStatVal: { fontSize: 18, fontWeight: '900' },
-    miniStatLabel: { fontSize: 10, fontWeight: '700', color: '#8899aa', marginTop: 2, letterSpacing: 0.5 },
+    miniStatLabel: { fontSize: 10, fontWeight: '700', color: COR.textoSecundario, marginTop: 2, letterSpacing: 0.5 },
 
     /* 2º e 3º */
     bottomRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
@@ -203,13 +203,13 @@ const styles = StyleSheet.create({
         padding: 16,
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 6,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        elevation: 3,
     },
     smallMedal: { fontSize: 32, marginBottom: 6 },
-    smallPos: { fontSize: 9, fontWeight: '800', color: '#8899aa', letterSpacing: 2, marginBottom: 8 },
+    smallPos: { fontSize: 9, fontWeight: '800', color: COR.textoSecundario, letterSpacing: 2, marginBottom: 8 },
     smallTeam: { fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, textAlign: 'center' },
     smallPtsBadge: {
         borderRadius: 20, borderWidth: 1,
@@ -217,15 +217,15 @@ const styles = StyleSheet.create({
     },
     smallPts: { fontSize: 14, fontWeight: '800' },
     smallStats: {},
-    smallStatText: { fontSize: 11, color: '#8899aa', fontWeight: '600' },
+    smallStatText: { fontSize: 11, color: COR.textoSecundario, fontWeight: '600' },
 
     btnNext: {
         backgroundColor: COR.verde,
         borderRadius: 16, paddingVertical: 18,
         alignItems: 'center',
         shadowColor: COR.verde,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
     },
     btnNextText: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 0.3 },
 });

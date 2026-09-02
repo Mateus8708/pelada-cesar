@@ -1,32 +1,33 @@
-import { useContext, useState, useRef } from 'react';
+import { useContext, useRef, useState } from 'react';
 import {
-    View, Text, TextInput, TouchableOpacity, Pressable, ScrollView,
-    SafeAreaView, StyleSheet, StatusBar, Keyboard, KeyboardAvoidingView, Platform,
+    View, Text, TextInput, TouchableOpacity, ScrollView,
+    SafeAreaView, StyleSheet, StatusBar, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { PeladaContext } from '../context/PeladaContext';
-import { COR } from '../constants/theme';
-
-const GRUPOS = [
-    { label: 'Grupo A', range: [0, 4] },
-    { label: 'Grupo B', range: [5, 9] },
-    { label: 'Grupo C', range: [10, 14] },
-];
+import { COR, NOMES_TIMES, CORES_TIMES } from '../constants/theme';
 
 export default function CadastroScreen() {
-    const { jogadores, atualizarNome, atualizarNota, formarTimes } = useContext(PeladaContext);
-    const [focusedId, setFocusedId] = useState(null);
-    // Estado local para os nomes — evita re-render do Context a cada letra digitada
-    const [nomes, setNomes] = useState(() => jogadores.map(j => j.nome));
-    const nomesRef = useRef(nomes);
+    const { times, adicionarJogador, removerJogador, iniciarPelada } = useContext(PeladaContext);
+    const [nomes, setNomes] = useState(['', '', '']);
     const inputRefs = useRef([]);
 
-    const preenchidos = nomes.filter(n => n.trim().length > 0).length;
-    const pct = Math.round((preenchidos / 15) * 100);
-    const tudo = preenchidos === 15;
+    const podeComecar = times.every(time => time.length > 0);
+
+    function handleAdd(ti) {
+        const sucesso = adicionarJogador(ti, nomes[ti]);
+        if (sucesso) {
+            setNomes(prev => {
+                const next = [...prev];
+                next[ti] = '';
+                return next;
+            });
+        }
+        inputRefs.current[ti]?.focus();
+    }
 
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="light-content" backgroundColor="#060c14" />
+            <StatusBar barStyle="dark-content" backgroundColor={COR.fundo} />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -41,152 +42,92 @@ export default function CadastroScreen() {
                     <View style={styles.header}>
                         <Text style={styles.headerEmoji}>⚽</Text>
                         <Text style={styles.headerTitle}>Pelada FC</Text>
-                        <Text style={styles.headerSub}>Cadastre os 15 jogadores</Text>
+                        <Text style={styles.headerSub}>Monte a escalação de cada time</Text>
                     </View>
 
-                    {/* Progress */}
-                    <View style={styles.progressBlock}>
-                        <View style={styles.progressRow}>
-                            <Text style={styles.progressLabel}>
-                                {preenchidos} <Text style={styles.progressLabelDim}>de 15 jogadores</Text>
-                            </Text>
-                            <Text style={[styles.progressPct, { color: tudo ? COR.verde : COR.azul }]}>
-                                {pct}%
-                            </Text>
-                        </View>
-                        <View style={styles.progressBg}>
-                            <View style={[styles.progressFill, {
-                                width: `${pct}%`,
-                                backgroundColor: tudo ? COR.verde : COR.azul,
-                            }]} />
-                        </View>
-                    </View>
-
-                    {/* Grupos de jogadores */}
-                    {GRUPOS.map(({ label, range }) => {
-                        const [ini, fim] = range;
-                        const grupoPreenchidos = nomes.slice(ini, fim + 1).filter(n => n.trim().length > 0).length;
-
+                    {/* Times */}
+                    {times.map((time, ti) => {
+                        const cor = CORES_TIMES[ti];
                         return (
-                            <View key={label} style={styles.grupo}>
-                                <View style={styles.grupoHeader}>
-                                    <Text style={styles.grupoLabel}>{label}</Text>
-                                    <Text style={styles.grupoCount}>
-                                        {grupoPreenchidos}/5
-                                    </Text>
+                            <View key={ti} style={[styles.teamCard, { borderColor: cor + '80' }]}>
+                                <View style={[styles.teamHeader, { backgroundColor: cor + '18' }]}>
+                                    <View style={[styles.teamColorDot, { backgroundColor: cor }]} />
+                                    <Text style={[styles.teamName, { color: cor }]}>{NOMES_TIMES[ti]}</Text>
+                                    <View style={styles.teamCountBadge}>
+                                        <Text style={[styles.teamCountText, { color: cor }]}>{time.length}</Text>
+                                    </View>
                                 </View>
 
-                                {jogadores.slice(ini, fim + 1).map((j, gi) => {
-                                    const i = ini + gi;
-                                    const filled = nomes[i].trim().length > 0;
-                                    const focused = focusedId === j.id;
-                                    const isLast = i === 14;
-
-                                    return (
-                                        <Pressable
-                                            key={j.id}
-                                            style={[
-                                                styles.card,
-                                                filled && styles.cardFilled,
-                                                focused && styles.cardFocused,
-                                            ]}
-                                            onPress={() => inputRefs.current[i]?.focus()}
+                                <View style={styles.teamBody}>
+                                    {/* Input de nome */}
+                                    <View style={styles.inputRow}>
+                                        <TextInput
+                                            ref={el => { inputRefs.current[ti] = el; }}
+                                            style={styles.input}
+                                            placeholder="Nome do jogador"
+                                            placeholderTextColor={COR.textoTerciario}
+                                            value={nomes[ti]}
+                                            onChangeText={v => {
+                                                setNomes(prev => {
+                                                    const next = [...prev];
+                                                    next[ti] = v;
+                                                    return next;
+                                                });
+                                            }}
+                                            returnKeyType="done"
+                                            autoCorrect={false}
+                                            autoCapitalize="words"
+                                            spellCheck={false}
+                                            blurOnSubmit={false}
+                                            onSubmitEditing={() => handleAdd(ti)}
+                                        />
+                                        <TouchableOpacity
+                                            style={[styles.btnAdd, { backgroundColor: cor }]}
+                                            onPress={() => handleAdd(ti)}
+                                            activeOpacity={0.8}
                                         >
-                                            {/* Badge número */}
-                                            <View style={[
-                                                styles.numBadge,
-                                                filled && { backgroundColor: COR.azul },
-                                                focused && { backgroundColor: COR.azul },
-                                            ]}>
-                                                <Text style={[styles.numText, (filled || focused) && { color: '#fff' }]}>
-                                                    {filled ? '✓' : i + 1}
-                                                </Text>
-                                            </View>
+                                            <Text style={styles.btnAddText}>+</Text>
+                                        </TouchableOpacity>
+                                    </View>
 
-                                            {/* Input nome — usa estado local para não perder foco */}
-                                            <TextInput
-                                                ref={el => { inputRefs.current[i] = el; }}
-                                                style={styles.input}
-                                                placeholder={`Jogador ${i + 1}`}
-                                                placeholderTextColor="#2e3f52"
-                                                value={nomes[i]}
-                                                onChangeText={v => {
-                                                    setNomes(prev => {
-                                                        const next = [...prev];
-                                                        next[i] = v;
-                                                        nomesRef.current = next;
-                                                        return next;
-                                                    });
-                                                }}
-                                                onFocus={() => setFocusedId(j.id)}
-                                                onBlur={() => {
-                                                    setFocusedId(null);
-                                                    atualizarNome(j.id, nomesRef.current[i]);
-                                                }}
-                                                returnKeyType={isLast ? 'done' : 'next'}
-                                                autoCorrect={false}
-                                                autoCapitalize="words"
-                                                spellCheck={false}
-                                                blurOnSubmit={false}
-                                                onSubmitEditing={() => {
-                                                    atualizarNome(j.id, nomesRef.current[i]);
-                                                    if (!isLast) {
-                                                        inputRefs.current[i + 1]?.focus();
-                                                    } else {
-                                                        Keyboard.dismiss();
-                                                    }
-                                                }}
-                                            />
-
-                                            {/* Estrelas */}
-                                            <View style={styles.stars}>
-                                                {[1, 2, 3, 4, 5].map(star => (
-                                                    <TouchableOpacity
-                                                        key={star}
-                                                        onPress={() => atualizarNota(j.id, star)}
-                                                        hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
-                                                        activeOpacity={0.7}
-                                                    >
-                                                        <Text style={[
-                                                            styles.star,
-                                                            j.nota >= star && styles.starFilled,
-                                                        ]}>
-                                                            ★
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                ))}
+                                    {/* Lista de jogadores */}
+                                    {time.length === 0 ? (
+                                        <Text style={styles.emptyText}>Nenhum jogador ainda</Text>
+                                    ) : (
+                                        time.map(j => (
+                                            <View key={j.nome} style={styles.playerRow}>
+                                                <View style={[styles.avatar, { backgroundColor: cor + '20' }]}>
+                                                    <Text style={[styles.avatarLetter, { color: cor }]}>
+                                                        {j.nome.charAt(0).toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.playerName}>{j.nome}</Text>
+                                                <TouchableOpacity
+                                                    style={styles.btnRemove}
+                                                    onPress={() => removerJogador(ti, j.nome)}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Text style={styles.btnRemoveText}>×</Text>
+                                                </TouchableOpacity>
                                             </View>
-                                        </Pressable>
-                                    );
-                                })}
+                                        ))
+                                    )}
+                                </View>
                             </View>
                         );
                     })}
 
-                    {/* Legenda estrelas */}
-                    <View style={styles.legenda}>
-                        <Text style={styles.legendaText}>★ = fraco &nbsp;&nbsp; ★★★ = médio &nbsp;&nbsp; ★★★★★ = craque</Text>
-                    </View>
-
-                    {/* Botão sortear */}
+                    {/* Botão começar */}
                     <TouchableOpacity
-                        style={[styles.btnSortear, !tudo && styles.btnSortearDisabled]}
-                        onPress={() => { Keyboard.dismiss(); formarTimes(); }}
+                        style={[styles.btnComecar, !podeComecar && styles.btnComecarDisabled]}
+                        onPress={iniciarPelada}
                         activeOpacity={0.85}
-                        disabled={!tudo}
+                        disabled={!podeComecar}
                     >
-                        {tudo ? (
-                            <Text style={styles.btnSortearText}>🎲  Sortear Times</Text>
-                        ) : (
-                            <View style={styles.btnSortearInner}>
-                                <Text style={styles.btnSortearTextDisabled}>
-                                    Faltam {15 - preenchidos} jogador{15 - preenchidos !== 1 ? 'es' : ''}
-                                </Text>
-                                <View style={styles.btnProgressBar}>
-                                    <View style={[styles.btnProgressFill, { width: `${pct}%` }]} />
-                                </View>
-                            </View>
-                        )}
+                        <Text style={[styles.btnComecarText, !podeComecar && styles.btnComecarTextDisabled]}>
+                            {podeComecar ? '⚽  Começar Pelada' : 'Adicione ao menos 1 jogador em cada time'}
+                        </Text>
                     </TouchableOpacity>
 
                 </ScrollView>
@@ -196,112 +137,114 @@ export default function CadastroScreen() {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: '#060c14' },
+    safe: { flex: 1, backgroundColor: COR.fundo },
     scroll: { padding: 20, paddingBottom: 60 },
 
     /* Header */
     header: { alignItems: 'center', paddingTop: 8, paddingBottom: 28 },
     headerEmoji: { fontSize: 48, marginBottom: 10 },
-    headerTitle: { fontSize: 32, fontWeight: '900', color: '#ffffff', letterSpacing: -1 },
-    headerSub: { fontSize: 13, color: '#5a7a9a', marginTop: 6, letterSpacing: 0.5 },
+    headerTitle: { fontSize: 32, fontWeight: '900', color: COR.texto, letterSpacing: -1 },
+    headerSub: { fontSize: 13, color: COR.textoSecundario, marginTop: 6, letterSpacing: 0.5 },
 
-    /* Progress */
-    progressBlock: { marginBottom: 28 },
-    progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
-    progressLabel: { fontSize: 15, fontWeight: '800', color: '#c8d8e8' },
-    progressLabelDim: { fontSize: 13, fontWeight: '500', color: '#4a6a8a' },
-    progressPct: { fontSize: 14, fontWeight: '800' },
-    progressBg: { height: 6, backgroundColor: '#0e1828', borderRadius: 3 },
-    progressFill: { height: 6, borderRadius: 3 },
-
-    /* Grupos */
-    grupo: { marginBottom: 20 },
-    grupoHeader: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: 10, paddingHorizontal: 2,
+    /* Card de time */
+    teamCard: {
+        backgroundColor: COR.superficie,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        marginBottom: 16,
+        overflow: 'hidden',
     },
-    grupoLabel: { fontSize: 11, fontWeight: '700', color: '#4a6a8a', letterSpacing: 1.5, textTransform: 'uppercase' },
-    grupoCount: { fontSize: 11, fontWeight: '700', color: '#4a6a8a' },
-
-    /* Cards */
-    card: {
+    teamHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#0c1420',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#141e2e',
-        paddingVertical: 14,
-        paddingHorizontal: 14,
-        marginBottom: 7,
-        gap: 12,
+        padding: 14,
+        gap: 10,
     },
-    cardFocused: {
-        borderColor: COR.azul,
-        backgroundColor: '#0a1624',
-        shadowColor: COR.azul,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 5,
+    teamColorDot: { width: 10, height: 10, borderRadius: 5 },
+    teamName: { fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, flex: 1 },
+    teamCountBadge: {
+        backgroundColor: COR.superficieAlt,
+        borderRadius: 10,
+        minWidth: 28,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        alignItems: 'center',
     },
-    cardFilled: {
-        borderColor: '#182a18',
-        backgroundColor: '#0a1410',
-    },
+    teamCountText: { fontSize: 13, fontWeight: '800' },
 
-    /* Badge número */
-    numBadge: {
-        width: 32, height: 32, borderRadius: 8,
-        backgroundColor: '#141e2e',
-        alignItems: 'center', justifyContent: 'center',
-    },
-    numText: { fontSize: 12, fontWeight: '800', color: '#4a6a8a' },
+    teamBody: { padding: 14, paddingTop: 4 },
 
     /* Input */
+    inputRow: { flexDirection: 'row', gap: 8, marginBottom: 12, marginTop: 8 },
     input: {
         flex: 1,
+        backgroundColor: COR.superficieAlt,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COR.borda,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
         fontSize: 15,
         fontWeight: '600',
-        color: '#ddeeff',
-        paddingVertical: 0,
-        minHeight: 24,
+        color: COR.texto,
     },
+    btnAdd: {
+        width: 46,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    btnAddText: { fontSize: 22, fontWeight: '900', color: '#fff', lineHeight: 24 },
 
-    /* Estrelas */
-    stars: { flexDirection: 'row', gap: 4 },
-    star: { fontSize: 20, color: '#1a2838' },
-    starFilled: { color: COR.amarelo },
+    /* Lista de jogadores */
+    emptyText: {
+        fontSize: 12,
+        color: COR.textoTerciario,
+        textAlign: 'center',
+        paddingVertical: 10,
+    },
+    playerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COR.superficieAlt,
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 7,
+        gap: 10,
+        borderWidth: 1,
+        borderColor: COR.borda,
+    },
+    avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    avatarLetter: { fontSize: 13, fontWeight: '800' },
+    playerName: { flex: 1, fontSize: 14, fontWeight: '700', color: COR.texto },
+    btnRemove: {
+        width: 26, height: 26, borderRadius: 13,
+        backgroundColor: COR.vermelhoClaro,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    btnRemoveText: { fontSize: 16, fontWeight: '900', color: COR.vermelho, lineHeight: 18 },
 
-    /* Legenda */
-    legenda: { alignItems: 'center', marginBottom: 8, marginTop: -8 },
-    legendaText: { fontSize: 11, color: '#2e4a6a' },
-
-    /* Botão sortear */
-    btnSortear: {
+    /* Botão começar */
+    btnComecar: {
         backgroundColor: COR.verde,
         borderRadius: 16,
         paddingVertical: 19,
+        paddingHorizontal: 16,
         alignItems: 'center',
         marginTop: 8,
         shadowColor: COR.verde,
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.15,
         shadowRadius: 14,
-        elevation: 8,
+        elevation: 4,
     },
-    btnSortearDisabled: {
-        backgroundColor: '#0e1828',
+    btnComecarDisabled: {
+        backgroundColor: COR.superficieAlt,
+        borderWidth: 1,
+        borderColor: COR.borda,
         shadowOpacity: 0,
         elevation: 0,
     },
-    btnSortearInner: { alignItems: 'center', width: '100%', paddingHorizontal: 24, gap: 10 },
-    btnSortearText: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 0.3 },
-    btnSortearTextDisabled: { color: '#4a6a8a', fontSize: 15, fontWeight: '700' },
-    btnProgressBar: {
-        height: 3, width: '100%', backgroundColor: '#1a2a3a', borderRadius: 2,
-    },
-    btnProgressFill: {
-        height: 3, backgroundColor: '#2a4a6a', borderRadius: 2,
-    },
+    btnComecarText: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: 0.3, textAlign: 'center' },
+    btnComecarTextDisabled: { color: COR.textoTerciario, fontSize: 14, fontWeight: '700' },
 });
